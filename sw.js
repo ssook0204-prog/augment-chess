@@ -8,8 +8,8 @@ self.addEventListener('fetch',e=>{
  e.respondWith((async()=>{
   const c=await caches.open(C);
   try{
-   const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),r.mode=='navigate'?4000:8000);
-   const res=await fetch(r,{signal:ctl.signal,cache:'no-store'});clearTimeout(t);
+   const hit=await c.match(r,{ignoreSearch:true}),ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),hit?(r.mode=='navigate'?2500:5000):8000);
+   const res=await fetch(r,{signal:ctl.signal,cache:'no-cache'});clearTimeout(t);
    if(res&&res.ok&&res.type=='basic')c.put(r,res.clone()).catch(()=>{});
    return res;
   }catch(err){
