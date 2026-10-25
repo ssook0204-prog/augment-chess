@@ -270,6 +270,11 @@ body.txe #txfab *:hover,body.txe [data-notx] *:hover{outline:none;cursor:auto}
 .bws,.bstack,.blist,.bw,.bif,.bpal{grid-template-columns:minmax(0,1fr)}
 .bws input[type=file]{max-width:100%}
 .imgrow{max-width:100%}.imgrow label{max-width:100%;display:flex;flex-wrap:wrap;gap:4px;align-items:center}.imgrow input[type=file]{width:100%;min-width:0}
+.mod .box[aria-label="관리자"]{width:min(1240px,100%);height:calc(100vh - 24px);height:calc(100dvh - 24px);max-height:none}
+.mod:has(.box[aria-label="관리자"]){padding:12px}
+.mod .box[aria-label="관리자"] .mbd{min-height:0}.mod .box[aria-label="관리자"] .mct{min-height:0}
+.bpal{max-height:calc(100vh - 230px)}
+@media(max-width:760px){.mod .box[aria-label="관리자"]{height:calc(100dvh - 16px)}.mod:has(.box[aria-label="관리자"]){padding:8px}.bpal{max-height:none}}
 </style></head><body><main id="app"></main><div id="mod"></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="pC" viewBox="0 0 100 100"><rect class="sh" x="10" y="86" width="80" height="9" rx="4.5"/><rect class="sh" x="24" y="64" width="20" height="24" rx="7"/><rect class="sh" x="56" y="64" width="20" height="24" rx="7"/><path class="sh" d="M24 68 Q18 38 36 34 H64 Q82 38 76 68 Z"/><rect class="sh" x="5" y="38" width="24" height="28" rx="9"/><rect class="sh" x="71" y="38" width="24" height="28" rx="9"/><path class="sh" d="M5 40 V30 H12 V36 M15 36 V30 H22 V36 M71 36 V30 H78 V36 M81 36 V30 H88 V40"/><rect class="sh" x="36" y="14" width="28" height="22" rx="10"/><path class="sh" d="M36 16 L39 5 L45 13 L50 3 L55 13 L61 5 L64 16 Z"/><path class="dt" d="M43 26 H57"/><path d="M50 44 L57 52 L50 60 L43 52 Z" style="fill:var(--pd);stroke:var(--ps);stroke-width:2.5;stroke-linejoin:round"/></symbol>
