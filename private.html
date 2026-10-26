@@ -2679,7 +2679,7 @@ function avSlot(uid,cls){if(!UUID.test(uid||''))return '';const o=UI.c[uid];if(!
 function fillAv(){document.querySelectorAll('[data-uav]').forEach(e=>{const o=UI.c[e.dataset.uav];if(o&&o.a&&!e.firstChild)e.innerHTML=`<img class="avp" src="${o.a}" alt="">`})}
 const uiDetail=e=>{let m=String(e&&(e.message||e.code)||'').replace(/\s+/g,' ');try{const j=JSON.parse(e.message);m=[j.code,j.message].filter(Boolean).join(' · ')}catch(_){}return m.slice(0,140)};
 const uiErr=e=>(e&&(e.code=='http_404'||e.status==404)?'이미지 저장소(user_imgs)를 찾지 못했어요 (404). Supabase에서 "내 이미지" SQL을 실행했는지, 실행했다면 몇 분 뒤 다시 시도해 주세요. ':'오류 ')+'['+uiDetail(e)+']';
-async function uiLoadMine(){if(!uiOn())return;try{const rows=await UIMG.mine();UI.noTable=0;UI.mine={};rows.forEach(r=>{UI.mine[r.kind]=r});const id=rkId();UI.c[id]={p:null,a:null};rows.forEach(r=>{if(r.st=='auto'||r.st=='ok'){const q=uiParse(r);if(q.a)UI.c[id].a=q.a;if(q.p)UI.c[id].p=q.p}});fillAv()}catch(e){UI.mine=UI.mine||{};if(e&&(e.code=='http_404'||e.status==404))UI.noTable=1}}
+async function uiLoadMine(){if(!uiOn())return;try{const rows=await UIMG.mine();UI.noTable=0;UI.mine={};rows.forEach(r=>{UI.mine[r.kind]=r});const id=rkId();UI.c[id]={p:null,a:null};rows.forEach(r=>{if(r.st=='auto'||r.st=='ok'){const q=uiParse(r);if(q.a)UI.c[id].a=q.a;if(q.p)UI.c[id].p=q.p}});fillAv()}catch(e){UI.mine=UI.mine||{};if(e&&(e.code=='http_404'||e.status==404))UI.noTable=uiDetail(e)||'404'}}
 /* ---- 그림 준비: 가운데를 정사각형으로 잘라 96px, 용량 제한 ---- */
 function uiPrep(file,size){return new Promise((res,rej)=>{
  if(!file||!/^image\/(png|jpeg|webp|gif)$/.test(file.type))return rej(new Error('PNG·JPG·WEBP·GIF 그림만 올릴 수 있어요'));
@@ -2724,7 +2724,7 @@ function uiUseTog(){if(!WAL)walLoad();if(WAL.eq.ui)delete WAL.eq.ui;else WAL.eq.
 function uiStat(k){const m=UI.mine&&UI.mine[k];if(!m)return '<span class="uist">없음</span>';return {auto:'<span class="uist ok">사용 중 (자동검사 통과)</span>',ok:'<span class="uist ok">사용 중 (관리자 승인)</span>',pending:'<span class="uist wait">관리자 승인 대기 중 — 나에게만 보여요</span>',ban:'<span class="uist bad">관리자가 막았어요</span>'}[m.st]||''}
 function uiShop(){SHT='img';const g=goldGet();let body;
  if(!uiOn())body='<p class="stnote" style="padding:14px 18px">내 이미지는 디스코드·이메일로 로그인한 계정에서만 쓸 수 있어요. (게스트는 쓸 수 없어요)</p>';
- else if(UI.noTable)body=`<p class="stnote" style="padding:14px 18px">${esc(uiErr({code:'http_404'}))}</p>`;
+ else if(UI.noTable)body=`<p class="stnote" style="padding:14px 18px">${esc(uiErr({code:'http_404',message:UI.noTable===1?'':String(UI.noTable)}))}</p>`;
  else{const m=UI.mine||{},have=uiParse(m.pieces).p||{},av=uiParse(m.avatar).a,banP=m.pieces&&m.pieces.st=='ban',banA=m.avatar&&m.avatar.st=='ban';
   const slot=t=>{const d=UI.draft.pieces[t],src=d||have[t];return `<div class="uis"><div class="uiprev">${src?`<img src="${src}" alt="">`:pieceSvg('w',t)}</div><b>${esc(PT[t][0])}</b><label class="uif${banP?' off':''}">고르기<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" ${banP?'disabled':''} onchange="uiPick('p','${t}',this)"></label>${d?`<button onclick="uiClr('p','${t}')">취소</button>`:''}</div>`};
   const nP=Object.keys(UI.draft.pieces).length;
