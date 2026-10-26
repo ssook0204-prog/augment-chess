@@ -2804,8 +2804,10 @@ async function adImgSet(btn,act){const r=btn.closest('.adr');if(!r)return;const 
    if(L)L.textContent=tot?(got/1048576).toFixed(2)+' / '+(tot/1048576).toFixed(2)+' MB':''};
   const fail=()=>{clearInterval(go.iv);d.remove();st.remove();go.on=0;try{sessionStorage.removeItem('ac-upd')}catch(e){}banner(v)};
   /* 진짜 받아오는 만큼만 진행돼요: 새 파일을 받는 양 = 막대 */
+  if(demo){const T=window.__PVMS||30000,t0=Date.now(),SZ=0.71*1048576;go.iv=setInterval(()=>{const x=Math.min(1,(Date.now()-t0)/T);show(Math.floor(SZ*x),SZ,x>=1);const L=lf(),left=Math.ceil(T*(1-x)/1000);if(L)L.textContent='미리보기 · 남은 시간 약 '+left+'초';
+    if(x>=1){clearInterval(go.iv);setTimeout(()=>{d.remove();st.remove();go.on=0},900)}},100);return}
   (async()=>{try{const r=await fetch(url,{cache:'reload'});if(!r.ok)throw 0;
-    const tot=+window.__UPDSZ||+r.headers.get('content-length')||0,enc=r.headers.get('content-encoding');let got=0,expect=sz||window.__UPDSZ||tot||0;
+    const tot=+r.headers.get('content-length')||0,enc=r.headers.get('content-encoding');let got=0,expect=window.__UPDSZ||sz||tot||0;
     if(r.body&&r.body.getReader){const rd=r.body.getReader();for(;;){const x=await rd.read();if(x.done)break;got+=x.value.length;show(got,Math.max(expect,got+1),0)}}else{const b=await r.arrayBuffer();got=b.byteLength;show(got,got,0)}
     show(got,got,1);setTimeout(()=>{if(demo){d.remove();st.remove();go.on=0}else location.replace(url)},demo?900:350)}catch(e){fail()}})()};
  window.updPreview=()=>go(String(VER).replace(/-[a-z]+$/,''),1);
