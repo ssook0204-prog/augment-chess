@@ -122,3 +122,6 @@ create policy "uimg delete own" on public.user_imgs for delete
 create policy "uimg admin" on public.user_imgs for all
   using (exists (select 1 from public.admins a where a.id = auth.uid()))
   with check (exists (select 1 from public.admins a where a.id = auth.uid()));
+
+-- 새 테이블을 만든 뒤 404가 계속 나면 아래 한 줄을 실행해서 API가 새 테이블을 알게 하세요.
+notify pgrst, 'reload schema';

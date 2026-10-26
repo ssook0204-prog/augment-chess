@@ -2677,7 +2677,8 @@ async function uiFetch(){const ids=[...UI.need];UI.need.clear();if(!ids.length)r
 function uiPiece(uid,t){const o=UI.c[uid];if(!o){uimgNeed(uid);return null}return o.p&&(o.p[t]||(PT[t]&&o.p[PT[t][2]]))||null}
 function avSlot(uid,cls){if(!UUID.test(uid||''))return '';const o=UI.c[uid];if(!o)uimgNeed(uid);return `<span class="avs ${cls||''}" data-uav="${uid}">${o&&o.a?`<img class="avp" src="${o.a}" alt="">`:''}</span>`}
 function fillAv(){document.querySelectorAll('[data-uav]').forEach(e=>{const o=UI.c[e.dataset.uav];if(o&&o.a&&!e.firstChild)e.innerHTML=`<img class="avp" src="${o.a}" alt="">`})}
-const uiErr=e=>e&&(e.code=='http_404'||e.status==404)?'이미지 저장소가 아직 준비되지 않았어요. 관리자가 Supabase에서 "내 이미지" SQL을 실행해야 해요 (404)':'오류 '+(e&&(e.code||e.message)||'');
+const uiDetail=e=>{let m=String(e&&(e.message||e.code)||'').replace(/\s+/g,' ');try{const j=JSON.parse(e.message);m=[j.code,j.message].filter(Boolean).join(' · ')}catch(_){}return m.slice(0,140)};
+const uiErr=e=>(e&&(e.code=='http_404'||e.status==404)?'이미지 저장소(user_imgs)를 찾지 못했어요 (404). Supabase에서 "내 이미지" SQL을 실행했는지, 실행했다면 몇 분 뒤 다시 시도해 주세요. ':'오류 ')+'['+uiDetail(e)+']';
 async function uiLoadMine(){if(!uiOn())return;try{const rows=await UIMG.mine();UI.noTable=0;UI.mine={};rows.forEach(r=>{UI.mine[r.kind]=r});const id=rkId();UI.c[id]={p:null,a:null};rows.forEach(r=>{if(r.st=='auto'||r.st=='ok'){const q=uiParse(r);if(q.a)UI.c[id].a=q.a;if(q.p)UI.c[id].p=q.p}});fillAv()}catch(e){UI.mine=UI.mine||{};if(e&&(e.code=='http_404'||e.status==404))UI.noTable=1}}
 /* ---- 그림 준비: 가운데를 정사각형으로 잘라 96px, 용량 제한 ---- */
 function uiPrep(file,size){return new Promise((res,rej)=>{
@@ -2691,10 +2692,10 @@ function uiPrep(file,size){return new Promise((res,rej)=>{
   rej(new Error('그림이 너무 복잡해요. 더 단순한 그림을 써 주세요'))};
  im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('그림을 읽을 수 없어요'))};im.src=u})}
 /* ---- 자동검사 (격리된 iframe: 계정 정보에 접근할 수 없어요) ---- */
-const NSFW_SRC='<!doctype html><meta charset="utf-8"><body><script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"><\/script><script src="https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/models/mobilenet_v2/model.min.js"><\/script><script src="https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/models/mobilenet_v2/group1-shard1of1.min.js"><\/script><script src="https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/browser/nsfwjs.min.js"><\/script><script>let M=null;addEventListener("message",async e=>{const d=e.data||{};if(d.t!="c")return;try{M=M||await nsfwjs.load();const im=new Image();im.src=d.img;await im.decode();const c=document.createElement("canvas");c.width=c.height=224;c.getContext("2d").drawImage(im,0,0,224,224);const p=await M.classify(c);parent.postMessage({t:"r",id:d.id,p:p.map(q=>[q.className,q.probability])},"*")}catch(err){parent.postMessage({t:"r",id:d.id,err:String(err&&err.message||err)},"*")}});parent.postMessage({t:"ready"},"*")<\/script>';
+const NSFW_SRC='<!doctype html><meta charset="utf-8"><body><script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"><\/script><script src="https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/models/mobilenet_v2/model.min.js"><\/script><script src="https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/models/mobilenet_v2/group1-shard1of1.min.js"><\/script><script src="https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/browser/nsfwjs.min.js"><\/script><script>let M=null;addEventListener("message",async e=>{const d=e.data||{};if(d.t!="c")return;try{M=M||await nsfwjs.load();const im=new Image();im.src=d.img;await im.decode();const c=document.createElement("canvas");c.width=c.height=224;c.getContext("2d").drawImage(im,0,0,224,224);const p=await M.classify(c);parent.postMessage({t:"r",id:d.id,p:p.map(q=>[q.className,q.probability])},"*")}catch(err){parent.postMessage({t:"r",id:d.id,err:String(err&&err.message||err)},"*")}});addEventListener("error",e=>{if(e.target&&e.target.src)parent.postMessage({t:"r",id:-1,err:"load "+e.target.src.split("/").slice(-2).join("/")},"*")},true);parent.postMessage({t:"ready"},"*")<\/script>';
 var NSFW_HTML=NSFW_SRC;
 function nsfwFrame(){if(UI.fr&&UI.fr.isConnected)return UI.fr;const f=document.createElement('iframe');f.setAttribute('sandbox','allow-scripts');f.setAttribute('aria-hidden','true');f.style.cssText='position:fixed;width:1px;height:1px;left:-9px;top:-9px;border:0;opacity:0;pointer-events:none';f.srcdoc=NSFW_HTML;document.body.appendChild(f);UI.fr=f;return f}
-addEventListener('message',e=>{const d=e.data;if(!d||!UI.fr||e.source!==UI.fr.contentWindow)return;if(d.t=='r'&&UI.fw[d.id]){const f=UI.fw[d.id];delete UI.fw[d.id];f(d)}});
+addEventListener('message',e=>{const d=e.data;if(!d||!UI.fr||e.source!==UI.fr.contentWindow)return;if(d.t=='r'&&d.id==-1){Object.values(UI.fw).forEach(f=>f({err:String(d.err||'load')}));return}if(d.t=='r'&&UI.fw[d.id]){const f=UI.fw[d.id];delete UI.fw[d.id];f(d)}});
 function nsfwRaw(img,ms){return new Promise(res=>{const id=++UI.fid;let done=0;const fin=v=>{if(done)return;done=1;delete UI.fw[id];res(v)};UI.fw[id]=fin;
  const f=nsfwFrame();const send=()=>{try{f.contentWindow.postMessage({t:'c',id,img},'*')}catch(e){fin({err:'send'})}};
  /* 프레임이 준비될 때까지 몇 번 다시 보냄 */let n=0;const iv=setInterval(()=>{if(done||++n>ms/1500){clearInterval(iv);return}send()},1500);send();
@@ -2702,7 +2703,7 @@ function nsfwRaw(img,ms){return new Promise(res=>{const id=++UI.fid;let done=0;c
 /* 엄격한 기준: 안전 분류(Neutral+Drawing)가 88% 이상이고 Porn<3%, Hentai<5%, Sexy<10% 일 때만 통과 */
 function nsfwVerdict(p){const o={};(p||[]).forEach(([n,v])=>{o[n]=+v||0});const P=o.Porn||0,H=o.Hentai||0,Sx=o.Sexy||0,safe=(o.Neutral||0)+(o.Drawing||0);
  const pass=P<.03&&H<.05&&Sx<.10&&P+H+Sx<.12&&safe>=.88;return{pass,why:pass?'':'porn '+P.toFixed(2)+' hentai '+H.toFixed(2)+' sexy '+Sx.toFixed(2)+' safe '+safe.toFixed(2)}}
-async function nsfwCheck(img){const r=await nsfwRaw(img,60000);if(r.err||!r.p)return{ok:null,why:'check-unavailable '+(r.err||'')};const v=nsfwVerdict(r.p);return{ok:v.pass,why:v.why}}
+async function nsfwCheck(img){const r=await nsfwRaw(img,60000);if(r.err||!r.p){try{UI.fr&&UI.fr.remove()}catch(e){}UI.fr=null}if(r.err||!r.p)return{ok:null,why:'check-unavailable '+(r.err||'')};const v=nsfwVerdict(r.p);return{ok:v.pass,why:v.why}}
 /* ---- 올리기 ---- */
 function uiNote(m){UI.msg=m;if(SHT=='img'&&MOD.querySelector('.shbox'))uiShop()}
 async function uiPick(kind,t,inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)return;try{const d=await uiPrep(f,96);if(kind=='a')UI.draft.avatar=d;else UI.draft.pieces[t]=d;UI.msg=''}catch(e){UI.msg=e.message}uiShop()}
@@ -2715,7 +2716,7 @@ async function uiSend(kind){if(UI.busy||!uiOn())return;if(Date.now()-UI.last<800
  let st='auto',why='';
  for(const im of imgs){const r=await nsfwCheck(im);if(r.ok!==true){st='pending';why=r.why;break}}
  try{await UIMG.put(kind,json,st,why);UI.last=Date.now();if(kind=='avatar')UI.draft.avatar=null;else UI.draft.pieces={};
-  UI.msg=st=='auto'?'검사를 통과해서 바로 적용됐어요':(/unavailable/.test(why)?'자동검사를 할 수 없어서 관리자 승인을 기다려요':'검사에서 부적절할 수 있다고 나와 관리자 승인을 기다려요')}
+  UI.msg=st=='auto'?'검사를 통과해서 바로 적용됐어요':(/unavailable/.test(why)?'자동검사를 할 수 없어서(검사 단계: '+why.replace('check-unavailable','').trim()+') 관리자 승인을 기다려요':'검사에서 부적절할 수 있다고 나와 관리자 승인을 기다려요')}
  catch(e){UI.msg='올리지 못했어요. '+uiErr(e)}
  UI.busy='';await uiLoadMine();uiShop();try{if(S.board)draw()}catch(e){}}
 async function uiDel(kind){if(UI.busy||!uiOn())return;try{await UIMG.del(kind);if(kind=='avatar')UI.draft.avatar=null;else{UI.draft.pieces={};delete WAL.eq.ui;walSave()}UI.msg='지웠어요'}catch(e){UI.msg='지우지 못했어요. '+uiErr(e)}await uiLoadMine();const id=rkId();if(UI.c[id]){if(kind=='avatar')UI.c[id].a=null;else UI.c[id].p=null}uiShop()}
