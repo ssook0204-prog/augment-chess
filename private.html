@@ -393,6 +393,7 @@ body.txe #txfab *:hover,body.txe [data-notx] *:hover{outline:none;cursor:auto}
 #frbox .row input{flex:1;min-width:0}
 #frinv{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:100001;background:var(--paper,#fbfaf6);color:var(--ink,#1f1e1c);border:2px solid var(--ink,#1f1e1c);border-radius:12px;box-shadow:4px 4px 0 var(--ink,#1f1e1c);padding:12px 16px;display:grid;gap:8px;max-width:92vw}
 .abhint{font-size:.78rem;color:var(--mut)}.lbo{display:inline-flex;gap:6px;align-items:center;font-weight:700;margin-left:6px}
+.mct{padding-bottom:72px}
 </style></head><body><main id="app"></main><div id="mod"></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="pC" viewBox="0 0 100 100"><rect class="sh" x="10" y="86" width="80" height="9" rx="4.5"/><rect class="sh" x="24" y="64" width="20" height="24" rx="7"/><rect class="sh" x="56" y="64" width="20" height="24" rx="7"/><path class="sh" d="M24 68 Q18 38 36 34 H64 Q82 38 76 68 Z"/><rect class="sh" x="5" y="38" width="24" height="28" rx="9"/><rect class="sh" x="71" y="38" width="24" height="28" rx="9"/><path class="sh" d="M5 40 V30 H12 V36 M15 36 V30 H22 V36 M71 36 V30 H78 V36 M81 36 V30 H88 V40"/><rect class="sh" x="36" y="14" width="28" height="22" rx="10"/><path class="sh" d="M36 16 L39 5 L45 13 L50 3 L55 13 L61 5 L64 16 Z"/><path class="dt" d="M43 26 H57"/><path d="M50 44 L57 52 L50 60 L43 52 Z" style="fill:var(--pd);stroke:var(--ps);stroke-width:2.5;stroke-linejoin:round"/></symbol>
@@ -571,6 +572,12 @@ window.SUPA={url:'https://omhsuordurjejjanpkgl.supabase.co',key:'eyJhbGciOiJIUzI
    if(r[0].id==ses.uid)throw {code:'self'};
    const pm=(perms||[]).filter(x=>/^(imgs|event|ban)$/.test(x));
    await req('/rest/v1/sub_admins?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{id:r[0].id,nick:r[0].nick,perms:pm}});return r[0].nick},
+  async people(q){if(!await isAdm())return[];const s=String(q||'').trim().replace(/[%_*,()\\]/g,'').slice(0,12);
+   const rows=(await req('/rest/v1/profiles?select=id,nick,created_at&order=created_at.desc&limit=200'+(s?'&nick=ilike.*'+encodeURIComponent(s)+'*':'')))||[];
+   if(!rows.length)return[];let rk=[];try{rk=(await req('/rest/v1/ranks?select=id,r&id=in.('+rows.map(r=>r.id).join(',')+')'))||[]}catch(e){}
+   const R={};rk.forEach(x=>R[x.id]=x.r);return rows.map(r=>({id:r.id,nick:r.nick,at:r.created_at,r:R[r.id],me:r.id==ses.uid}))},
+  async addId(id,nick,perms){if(!await isAdm())throw {code:'not_permitted'};if(id==ses.uid)throw {code:'self'};const pm=(perms||[]).filter(x=>/^(imgs|event|ban)$/.test(x));
+   await req('/rest/v1/sub_admins?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:{id,nick:String(nick||'').slice(0,24),perms:pm}})},
   async set(id,perms){if(!await isAdm())throw {code:'not_permitted'};const pm=(perms||[]).filter(x=>/^(imgs|event|ban)$/.test(x));await req('/rest/v1/sub_admins?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:{perms:pm}})},
   async rm(id){if(!await isAdm())throw {code:'not_permitted'};await req('/rest/v1/sub_admins?id=eq.'+encodeURIComponent(id),{method:'DELETE'})}};
  const UU=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -2302,7 +2309,8 @@ function rkBlock(){if(IS_ADMIN)return false;const b=((CFG&&CFG.ban)||{})[rkId()]
 function adExtra(t){
  if(t=='sub'){if(!IS_ADMIN)return '';return `<h2>부관리자</h2><p class="adn">닉네임으로 다른 사람을 부관리자로 임명해요. 부관리자는 아래에서 고른 일만 할 수 있어요. 카드·기물·AI·게임 설정, 점수 조작, 관리자 임명은 못 해요(서버가 막아요). 상대가 한 번이라도 로그인해 닉네임을 정했어야 해요.</p>
   <div class="adr" id="subadd"><label class="adset">닉네임<input data-f="nick" maxlength="12" placeholder="임명할 사람 닉네임" data-notx></label><div class="row" style="flex-wrap:wrap;gap:10px">${Object.keys(SUBN).map(k=>`<label><input type="checkbox" data-p="${k}" checked> ${SUBN[k]}</label>`).join('')}<button class="ac" onclick="subAdd()">임명</button></div></div>
-  <h3 style="margin:14px 0 6px">부관리자 목록</h3><div id="adsub"><p class="adn">불러오는 중…</p></div>`}
+  <h3 style="margin:14px 0 6px">부관리자 목록</h3><div id="adsub"><p class="adn">불러오는 중…</p></div>
+  <h3 style="margin:14px 0 6px">사람 목록</h3><p class="adn">가입한 사람(최근 200명)이에요. 위에서 고른 권한으로 바로 임명돼요.</p><input class="adq" id="subq" placeholder="닉네임 검색" value="${esc(SUBQ)}" oninput="SUBQ=this.value;clearTimeout(SUBQT);SUBQT=setTimeout(subPeople,300)" data-notx><div id="adppl"><p class="adn">불러오는 중…</p></div>`}
  if(t=='ai'){const S2=SET(),F=(CFG.aiForce||[]);
   const num=(k,txt,a,z,st)=>`<label class="adset">${txt}<input data-k="${k}" type="number" min="${a}" max="${z}" step="${st||1}" value="${S2[k]}"></label>`;
   const chk=(k,txt)=>`<label class="adset">${txt}<input data-k="${k}" type="checkbox"${S2[k]!=0?' checked':''}></label>`;
@@ -2392,9 +2400,17 @@ async function devClear(){try{const r=await navigator.serviceWorker.getRegistrat
 
 /* ---------- 부관리자 임명·권한·해임 (관리자 전용) ---------- */
 const SUBE={no_user:'그 닉네임을 쓰는 사람을 찾지 못했어요',many:'같은 닉네임이 여러 명이에요',self:'나 자신은 임명할 수 없어요',no_nick:'닉네임을 써 주세요',not_permitted:'관리자만 할 수 있어요'};
+let SUBQ='',SUBQT=0,SUBL=[];
+async function subPeople(){const box=()=>document.getElementById('adppl');if(!box())return;let L=[];
+ try{L=await SUBA.people(SUBQ)}catch(e){box().innerHTML='<p class="adn">사람 목록을 불러오지 못했어요.</p>';return}
+ const sub={};SUBL.forEach(r=>sub[r.id]=r);const d=t=>{try{const x=new Date(t);return (x.getMonth()+1)+'/'+x.getDate()}catch(e){return ''}};
+ box().innerHTML=`<p class="adn">${L.length}명</p><div class="adl">${L.map(p=>`<div class="adr" data-id="${esc(p.id)}" data-n="${esc(p.nick)}"><div class="row" style="align-items:center;gap:8px"><b>${esc(p.nick)}</b>${p.me?'<span class="bdg">나</span>':''}${sub[p.id]?'<span class="bdg">부관리자</span>':''}<span class="adn">${p.r!=null?'랭크 '+p.r+' · ':''}가입 ${d(p.at)}</span>${p.me||sub[p.id]?'':'<button class="ac" style="margin-left:auto" onclick="subAddRow(this)">부관리자로 임명</button>'}</div></div>`).join('')||'<p class="adn">찾는 사람이 없어요.</p>'}</div>`}
+async function subAddRow(b){if(!IS_ADMIN)return;const r=b.closest('.adr'),f=document.getElementById('subadd'),pm=f?subPm(f):['imgs','event','ban'];
+ if(!pm.length){ADM_NOTE='맡길 권한을 위에서 하나 이상 골라 주세요';adminOpen('sub');return}
+ try{await SUBA.addId(r.dataset.id,r.dataset.n,pm);ADM_NOTE=r.dataset.n+' 님을 부관리자로 임명했어요. 다시 로그인하면 적용돼요.'}catch(e){ADM_NOTE=SUBE[e&&e.code]||'임명하지 못했어요'}adminOpen('sub')}
 async function subLoad(){const box=()=>document.getElementById('adsub');if(!box())return;
- let L=[];try{L=await SUBA.list()}catch(e){box().innerHTML='<p class="adn">불러오지 못했어요. 부관리자 SQL(supabase-subadmin.sql)을 실행했는지 확인하세요.</p>';return}
- box().innerHTML=L.map(r=>`<div class="adr" data-id="${esc(r.id)}"><div class="row" style="align-items:center"><b>${esc(r.nick||r.id.slice(0,8))}</b></div><div class="row" style="flex-wrap:wrap;gap:10px">${Object.keys(SUBN).map(k=>`<label><input type="checkbox" data-p="${k}"${(r.perms||[]).includes(k)?' checked':''}> ${SUBN[k]}</label>`).join('')}<button class="ac" onclick="subSet(this)">저장</button><button onclick="subDel(this)">해임</button></div></div>`).join('')||'<p class="adn">아직 없어요.</p>'}
+ let L=[];try{L=await SUBA.list()}catch(e){box().innerHTML='<p class="adn">불러오지 못했어요. 부관리자 SQL(supabase-subadmin.sql)을 실행했는지 확인하세요.</p>';subPeople();return}SUBL=L;
+ box().innerHTML=L.map(r=>`<div class="adr" data-id="${esc(r.id)}"><div class="row" style="align-items:center"><b>${esc(r.nick||r.id.slice(0,8))}</b></div><div class="row" style="flex-wrap:wrap;gap:10px">${Object.keys(SUBN).map(k=>`<label><input type="checkbox" data-p="${k}"${(r.perms||[]).includes(k)?' checked':''}> ${SUBN[k]}</label>`).join('')}<button class="ac" onclick="subSet(this)">저장</button><button onclick="subDel(this)">해임</button></div></div>`).join('')||'<p class="adn">아직 없어요.</p>';subPeople()}
 const subPm=r=>[...r.querySelectorAll('input[data-p]')].filter(i=>i.checked).map(i=>i.dataset.p);
 async function subAdd(){if(!IS_ADMIN)return;const r=document.getElementById('subadd'),n=r.querySelector('[data-f="nick"]').value;
  try{const nk=await SUBA.add(n,subPm(r));ADM_NOTE=nk+' 님을 부관리자로 임명했어요. 다시 로그인하면 적용돼요.'}catch(e){ADM_NOTE=SUBE[e&&e.code]||'임명하지 못했어요. 부관리자 SQL을 실행했는지 확인하세요.'}adminOpen('sub')}
