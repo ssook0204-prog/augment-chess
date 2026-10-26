@@ -98,7 +98,7 @@ create trigger wallet_guard before insert or update on public.wallet
 -- 상태: auto = 브라우저 자동검사 통과(바로 공개) / pending = 관리자 승인 대기(나만 보임) / ok = 관리자 승인 / ban = 관리자가 숨김·차단
 create table if not exists public.user_imgs (
   uid uuid not null references public.profiles(id) on delete cascade,
-  kind text not null check (kind in ('pieces','avatar')),
+  kind text not null check (kind ~ '^(pieces|avatar|pc:[0-9a-f]{1,6})$'),
   img text not null check (length(img) <= 90000),
   st text not null default 'pending' check (st in ('pending','auto','ok','ban')),
   why text,
@@ -122,6 +122,19 @@ create policy "uimg delete own" on public.user_imgs for delete
 create policy "uimg admin" on public.user_imgs for all
   using (exists (select 1 from public.admins a where a.id = auth.uid()))
   with check (exists (select 1 from public.admins a where a.id = auth.uid()));
+
+-- ===== 증강 기물 그림 추가분 (위 내 이미지를 이미 실행한 경우 이것만 실행) =====
+alter table public.user_imgs drop constraint if exists user_imgs_kind_check;
+alter table public.user_imgs add constraint user_imgs_kind_check check (kind ~ '^(pieces|avatar|pc:[0-9a-f]{1,6})$');
+create or replace function public.user_imgs_cap() returns trigger language plpgsql as $$
+begin
+  if tg_op = 'INSERT' and (select count(*) from public.user_imgs where uid = new.uid) >= 42 then
+    raise exception 'too many images';
+  end if;
+  return new;
+end $$;
+drop trigger if exists user_imgs_cap on public.user_imgs;
+create trigger user_imgs_cap before insert on public.user_imgs for each row execute function public.user_imgs_cap();
 
 -- 새 테이블을 만든 뒤 404가 계속 나면 아래 한 줄을 실행해서 API가 새 테이블을 알게 하세요.
 notify pgrst, 'reload schema';
