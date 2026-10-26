@@ -298,7 +298,12 @@ begin
   if 'ban' = any(p) then al := al || array['ban']; end if;
   begin
     n := new.json::jsonb;
-    o := case when tg_op = 'UPDATE' then old.json::jsonb else '{}'::jsonb end;
+    if tg_op = 'UPDATE' then o := old.json::jsonb;
+    else
+      -- upsert(INSERT ... ON CONFLICT)도 먼저 이 트리거를 지나므로, 이미 있는 행과 비교해요
+      select json::jsonb into o from public.site_cfg where id = new.id;
+      o := coalesce(o, '{}'::jsonb);
+    end if;
   exception when others then raise exception 'bad_json'; end;
   if jsonb_typeof(n) <> 'object' or jsonb_typeof(o) <> 'object' then raise exception 'bad_json'; end if;
   for k in select jsonb_object_keys(o || n) loop
