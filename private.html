@@ -2665,7 +2665,7 @@ document.addEventListener('click',e=>{if(!S.spec)return;const t=e.target;if(!t||
    - 올리면 브라우저에서 자동검사(NSFW 모델, 격리된 iframe). 통과하면 바로 공개(auto), 걸리거나 검사를 못 하면 관리자 승인(pending).
    - 남에게는 통과/승인된 것만 서버에서 받아 보여줘요. (P2P로 받은 그림은 쓰지 않아요) */
 const UIT=['P','N','B','R','Q','K'],UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,IMGOK=/^data:image\/(webp|png|jpeg);base64,[A-Za-z0-9+\/=]+$/,UIMAX=12000;
-var UI={c:{},need:new Set(),tm:0,mine:null,draft:{pieces:{},avatar:null},busy:'',msg:'',last:0,fr:null,fid:0,fw:{}};
+var UI={noTable:0,c:{},need:new Set(),tm:0,mine:null,draft:{pieces:{},avatar:null},busy:'',msg:'',last:0,fr:null,fid:0,fw:{}};
 const uiOn=()=>typeof UIMG!='undefined'&&typeof walAcct=='function'&&walAcct();
 const uiMineOk=k=>!!(UI.mine&&UI.mine[k]&&(UI.mine[k].st=='auto'||UI.mine[k].st=='ok'));
 function uiParse(r){const o={p:null,a:null};if(!r)return o;if(r.kind=='avatar'){if(IMGOK.test(r.img))o.a=r.img}else{try{const j=JSON.parse(r.img),q={};for(const t of UIT)if(typeof j[t]=='string'&&IMGOK.test(j[t]))q[t]=j[t];if(Object.keys(q).length)o.p=q}catch(e){}}return o}
@@ -2677,7 +2677,8 @@ async function uiFetch(){const ids=[...UI.need];UI.need.clear();if(!ids.length)r
 function uiPiece(uid,t){const o=UI.c[uid];if(!o){uimgNeed(uid);return null}return o.p&&(o.p[t]||(PT[t]&&o.p[PT[t][2]]))||null}
 function avSlot(uid,cls){if(!UUID.test(uid||''))return '';const o=UI.c[uid];if(!o)uimgNeed(uid);return `<span class="avs ${cls||''}" data-uav="${uid}">${o&&o.a?`<img class="avp" src="${o.a}" alt="">`:''}</span>`}
 function fillAv(){document.querySelectorAll('[data-uav]').forEach(e=>{const o=UI.c[e.dataset.uav];if(o&&o.a&&!e.firstChild)e.innerHTML=`<img class="avp" src="${o.a}" alt="">`})}
-async function uiLoadMine(){if(!uiOn())return;try{const rows=await UIMG.mine();UI.mine={};rows.forEach(r=>{UI.mine[r.kind]=r});const id=rkId();UI.c[id]={p:null,a:null};rows.forEach(r=>{if(r.st=='auto'||r.st=='ok'){const q=uiParse(r);if(q.a)UI.c[id].a=q.a;if(q.p)UI.c[id].p=q.p}});fillAv()}catch(e){UI.mine=UI.mine||{}}}
+const uiErr=e=>e&&(e.code=='http_404'||e.status==404)?'이미지 저장소가 아직 준비되지 않았어요. 관리자가 Supabase에서 "내 이미지" SQL을 실행해야 해요 (404)':'오류 '+(e&&(e.code||e.message)||'');
+async function uiLoadMine(){if(!uiOn())return;try{const rows=await UIMG.mine();UI.noTable=0;UI.mine={};rows.forEach(r=>{UI.mine[r.kind]=r});const id=rkId();UI.c[id]={p:null,a:null};rows.forEach(r=>{if(r.st=='auto'||r.st=='ok'){const q=uiParse(r);if(q.a)UI.c[id].a=q.a;if(q.p)UI.c[id].p=q.p}});fillAv()}catch(e){UI.mine=UI.mine||{};if(e&&(e.code=='http_404'||e.status==404))UI.noTable=1}}
 /* ---- 그림 준비: 가운데를 정사각형으로 잘라 96px, 용량 제한 ---- */
 function uiPrep(file,size){return new Promise((res,rej)=>{
  if(!file||!/^image\/(png|jpeg|webp|gif)$/.test(file.type))return rej(new Error('PNG·JPG·WEBP·GIF 그림만 올릴 수 있어요'));
@@ -2715,13 +2716,14 @@ async function uiSend(kind){if(UI.busy||!uiOn())return;if(Date.now()-UI.last<800
  for(const im of imgs){const r=await nsfwCheck(im);if(r.ok!==true){st='pending';why=r.why;break}}
  try{await UIMG.put(kind,json,st,why);UI.last=Date.now();if(kind=='avatar')UI.draft.avatar=null;else UI.draft.pieces={};
   UI.msg=st=='auto'?'검사를 통과해서 바로 적용됐어요':(/unavailable/.test(why)?'자동검사를 할 수 없어서 관리자 승인을 기다려요':'검사에서 부적절할 수 있다고 나와 관리자 승인을 기다려요')}
- catch(e){UI.msg='올리지 못했어요 ('+(e.code||e.message||'오류')+')'}
+ catch(e){UI.msg='올리지 못했어요. '+uiErr(e)}
  UI.busy='';await uiLoadMine();uiShop();try{if(S.board)draw()}catch(e){}}
-async function uiDel(kind){if(UI.busy||!uiOn())return;try{await UIMG.del(kind);if(kind=='avatar')UI.draft.avatar=null;else{UI.draft.pieces={};delete WAL.eq.ui;walSave()}UI.msg='지웠어요'}catch(e){UI.msg='지우지 못했어요'}await uiLoadMine();const id=rkId();if(UI.c[id]){if(kind=='avatar')UI.c[id].a=null;else UI.c[id].p=null}uiShop()}
+async function uiDel(kind){if(UI.busy||!uiOn())return;try{await UIMG.del(kind);if(kind=='avatar')UI.draft.avatar=null;else{UI.draft.pieces={};delete WAL.eq.ui;walSave()}UI.msg='지웠어요'}catch(e){UI.msg='지우지 못했어요. '+uiErr(e)}await uiLoadMine();const id=rkId();if(UI.c[id]){if(kind=='avatar')UI.c[id].a=null;else UI.c[id].p=null}uiShop()}
 function uiUseTog(){if(!WAL)walLoad();if(WAL.eq.ui)delete WAL.eq.ui;else WAL.eq.ui='1';walSave();uiShop()}
 function uiStat(k){const m=UI.mine&&UI.mine[k];if(!m)return '<span class="uist">없음</span>';return {auto:'<span class="uist ok">사용 중 (자동검사 통과)</span>',ok:'<span class="uist ok">사용 중 (관리자 승인)</span>',pending:'<span class="uist wait">관리자 승인 대기 중 — 나에게만 보여요</span>',ban:'<span class="uist bad">관리자가 막았어요</span>'}[m.st]||''}
 function uiShop(){SHT='img';const g=goldGet();let body;
  if(!uiOn())body='<p class="stnote" style="padding:14px 18px">내 이미지는 디스코드·이메일로 로그인한 계정에서만 쓸 수 있어요. (게스트는 쓸 수 없어요)</p>';
+ else if(UI.noTable)body=`<p class="stnote" style="padding:14px 18px">${esc(uiErr({code:'http_404'}))}</p>`;
  else{const m=UI.mine||{},have=uiParse(m.pieces).p||{},av=uiParse(m.avatar).a,banP=m.pieces&&m.pieces.st=='ban',banA=m.avatar&&m.avatar.st=='ban';
   const slot=t=>{const d=UI.draft.pieces[t],src=d||have[t];return `<div class="uis"><div class="uiprev">${src?`<img src="${src}" alt="">`:pieceSvg('w',t)}</div><b>${esc(PT[t][0])}</b><label class="uif${banP?' off':''}">고르기<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" ${banP?'disabled':''} onchange="uiPick('p','${t}',this)"></label>${d?`<button onclick="uiClr('p','${t}')">취소</button>`:''}</div>`};
   const nP=Object.keys(UI.draft.pieces).length;
@@ -2734,7 +2736,7 @@ function uiShop(){SHT='img';const g=goldGet();let body;
  if(uiOn()&&!UI.mine)uiLoadMine().then(()=>{if(SHT=='img'&&MOD.querySelector('[aria-label="내 이미지"]'))uiShop()})}
 /* ---- 관리자: 이미지 검토 ---- */
 async function adImgsLoad(){const box=()=>document.getElementById('adimgs');if(!box())return;
- let L=[];try{L=await UIMG.list()}catch(e){box().innerHTML='<p class="adn">불러오지 못했어요 ('+esc(e.code||e.message||'')+'). Supabase에서 이미지 SQL을 실행했는지 확인해 주세요.</p>';return}
+ let L=[];try{L=await UIMG.list()}catch(e){box().innerHTML='<p class="adn">불러오지 못했어요. '+esc(uiErr(e))+'</p>';return}
  let ps={};try{if(USR&&L.length)ps=await USR.profiles([...new Set(L.map(x=>x.uid))])}catch(e){}
  const ord={pending:0,auto:1,ok:2,ban:3};L.sort((a,b)=>ord[a.st]-ord[b.st]);
  const name=u=>(ps[u]&&ps[u].name)||u.slice(0,8);
