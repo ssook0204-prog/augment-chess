@@ -7,6 +7,10 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.CookieManager;
+import android.webkit.ServiceWorkerClient;
+import android.webkit.ServiceWorkerController;
+import android.webkit.WebResourceResponse;
+import java.io.ByteArrayInputStream;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -41,6 +45,11 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        // 사이트의 오프라인용 서비스 워커는 앱에서 쓰지 않아요(앱에 오프라인 판이 따로 있어요).
+        ServiceWorkerController.getInstance().setServiceWorkerClient(new ServiceWorkerClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebResourceRequest r) { return blockSw(r); }
+        });
         web = new WebView(this);
         setContentView(web);
         WebSettings s = web.getSettings();
@@ -72,7 +81,17 @@ public class MainActivity extends Activity {
                 }
             }
             @Override
+            public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) { return blockSw(r); }
+            @Override
             public void onPageStarted(WebView v, String url, Bitmap f) { super.onPageStarted(v, url, f); }
+            @Override
+            public void onPageFinished(WebView v, String url) {
+                // 그래도 "오프라인이에요" 글자만 보이면 앱에 든 오프라인 판을 열어요.
+                if (offline) return;
+                v.evaluateJavascript("(document.body?document.body.innerText.slice(0,10):'')", t -> {
+                    if (t != null && t.contains("오프라인이에요")) { offline = true; v.loadUrl(OFFLINE); }
+                });
+            }
         });
         web.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -90,6 +109,13 @@ public class MainActivity extends Activity {
         });
         if (b != null) web.restoreState(b);
         else web.loadUrl(SITE);
+    }
+
+    static WebResourceResponse blockSw(WebResourceRequest r) {
+        String path = r.getUrl().getPath();
+        if (path != null && path.endsWith("/sw.js"))
+            return new WebResourceResponse("text/plain", "utf-8", 404, "Not Found", null, new ByteArrayInputStream(new byte[0]));
+        return null;
     }
 
     void open(String u) {
