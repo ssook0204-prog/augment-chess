@@ -6,7 +6,7 @@
 --     저장 요청을 아무리 많이 보내도 통에 든 만큼만 늘어나요. 처음 저장하는 계정은 2000까지 인정해요.
 --  2) 물건을 사면 종류별 값(색 테마 300 · 이모지 세트 500 · 테두리 효과 800 · 이름 효과 600 · 움직임 효과 700)만큼 골드가 줄었거나 통에서 쓸 수 있어야 해요.
 --     모자라면 새로 늘어난 물건은 취소되고 골드도 허용 한도까지만 인정돼요.
---  3) 물건 이름 모양이 이상하거나 60개를 넘으면 그 항목은 지워요. 장착(eq)은 가진 물건만 인정하고, 나만의 이름 효과는 정해진 모양만 인정해요.
+--  3) 물건 이름 모양이 이상하거나 60개를 넘으면 그 항목은 지워요. 장착(eq)은 가진 물건만 인정하고(합성 'A+B'는 둘 다 가져야 해요), 나만의 이름 효과는 정해진 모양만 인정해요.
 --  4) 한 번에 저장하는 크기는 20KB까지예요.
 --  5) 걸러낸 일은 wallet_flags 표에 남겨요(관리자만 볼 수 있어요). Table Editor 에서 wallet_flags 를 열어 보세요.
 --  6) 로그인 없이 Supabase 대시보드에서 직접 고치거나 관리자 계정이 저장하는 건 검사하지 않아요(직접 골드를 줄 수 있게).
@@ -88,7 +88,12 @@ begin
       if k = 'ui' then neweq := neweq || jsonb_build_object(k, v);
       elsif jsonb_typeof(v) = 'string' and length(v #>> '{}') <= 80 then
         if k = 'nm' and (v #>> '{}') ~ nmre then neweq := neweq || jsonb_build_object(k, v);
-        elsif k in ('ct','sk','fx','nm','mv') and newown ? (k || ':' || (v #>> '{}')) then neweq := neweq || jsonb_build_object(k, v);
+        elsif k = 'nm' and newown ? ('nm:' || (v #>> '{}')) then neweq := neweq || jsonb_build_object(k, v);
+        -- 합성: 'a' 또는 'a+b'(서로 다른 두 개, 둘 다 가진 물건)
+        elsif k in ('ct','sk','fx','mv') and (v #>> '{}') ~ '^[a-z0-9]{1,16}(\+[a-z0-9]{1,16})?$'
+              and newown ? (k || ':' || split_part(v #>> '{}', '+', 1))
+              and (split_part(v #>> '{}', '+', 2) = '' or (split_part(v #>> '{}', '+', 2) <> split_part(v #>> '{}', '+', 1) and newown ? (k || ':' || split_part(v #>> '{}', '+', 2)))) then
+          neweq := neweq || jsonb_build_object(k, v);
         end if;
       end if;
     end loop;
