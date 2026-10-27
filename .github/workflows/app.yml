@@ -1,0 +1,120 @@
+# 증강 체스 앱 만들기: 윈도우·맥·리눅스·안드로이드 설치 파일을 만들어 GitHub 릴리스에 올려요.
+# app/ 폴더가 바뀌면 자동으로 돌아요. (Actions 탭에서 직접 실행할 수도 있어요)
+name: app
+on:
+  push:
+    branches: [main, master]
+    paths: ['app/**', '.github/workflows/app.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-14, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: app/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: 오프라인 판 넣기
+        run: cp ../../index.html offline/index.html && cp ../../icon-192.png ../../icon-512.png ../../manifest.webmanifest offline/
+      - run: npm install --no-audit --no-fund
+      - name: 윈도우
+        if: runner.os == 'Windows'
+        run: npx electron-builder --win --publish never
+      - name: 리눅스
+        if: runner.os == 'Linux'
+        run: npx electron-builder --linux --publish never
+      - name: 맥
+        if: runner.os == 'macOS'
+        env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
+        run: |
+          npx electron-builder --mac --universal --publish never
+          APP="$(find dist -maxdepth 2 -name '*.app' | head -1)"
+          echo "app: $APP"
+          codesign --force --deep --sign - "$APP"
+          mkdir -p dmg && cp -R "$APP" dmg/ && ln -s /Applications dmg/Applications
+          hdiutil create -volname "증강 체스" -srcfolder dmg -ov -format UDZO dist/AugmentChess-mac.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ runner.os }}
+          path: |
+            app/desktop/dist/AugmentChess-Setup.exe
+            app/desktop/dist/AugmentChess-mac.dmg
+            app/desktop/dist/AugmentChess-linux-*.AppImage
+            app/desktop/dist/AugmentChess-linux-*.deb
+          if-no-files-found: error
+
+  android:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: app/android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.9' }
+      - name: 오프라인 판 넣기
+        run: cp ../../index.html app/src/main/assets/offline/index.html && cp ../../icon-192.png ../../icon-512.png ../../manifest.webmanifest app/src/main/assets/offline/
+      - name: 서명 키
+        env:
+          KS_B64: ${{ secrets.AC_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.AC_KEYSTORE_PASS }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/ac.jks"
+            echo "AC_KEYSTORE_PASS=$KS_PASS" >> "$GITHUB_ENV"
+          else
+            echo "::warning::AC_KEYSTORE_B64 secret이 없어서 이번 빌드 전용 서명 키를 만들어요. 다음 빌드로 덮어 설치하려면 앱을 지우고 다시 설치해야 해요."
+            P=$(openssl rand -hex 16)
+            keytool -genkeypair -v -keystore "$RUNNER_TEMP/ac.jks" -alias augmentchess -keyalg RSA -keysize 2048 -validity 10000 -storepass "$P" -keypass "$P" -dname "CN=Augment Chess, O=ssook0204"
+            echo "::add-mask::$P"
+            echo "AC_KEYSTORE_PASS=$P" >> "$GITHUB_ENV"
+          fi
+          echo "AC_KEYSTORE=$RUNNER_TEMP/ac.jks" >> "$GITHUB_ENV"
+      - name: APK 만들기
+        env:
+          AC_VERSION_CODE: ${{ github.run_number }}
+          AC_VERSION_NAME: 1.0.${{ github.run_number }}
+        run: |
+          gradle --no-daemon assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk AugmentChess-android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: app/android/AugmentChess-android.apk
+          if-no-files-found: error
+
+  release:
+    needs: [desktop, android]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: out, merge-multiple: true }
+      - run: ls -la out
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-v1.0.${{ github.run_number }}
+          name: 증강 체스 앱 v1.0.${{ github.run_number }}
+          make_latest: 'true'
+          body: |
+            증강 체스 설치 파일이에요. 앱은 항상 최신 게임 사이트를 열어서, 게임이 업데이트돼도 앱을 다시 받을 필요가 없어요. 인터넷이 없으면 앱에 든 오프라인 판(AI·2인 플레이)이 열려요.
+
+            - 윈도우: AugmentChess-Setup.exe → 실행 → (파란 경고가 뜨면) "추가 정보" → "실행"
+            - 맥: AugmentChess-mac.dmg → 증강 체스를 응용 프로그램으로 끌기 → 처음엔 앱을 오른쪽 클릭 → "열기" (또는 시스템 설정 › 개인정보 보호 및 보안 › "그래도 열기")
+            - 리눅스: AugmentChess-linux-x86_64.AppImage (실행 권한 주고 실행) 또는 .deb (sudo apt install ./파일.deb)
+            - 안드로이드: AugmentChess-android.apk → 열기 → "출처를 알 수 없는 앱 설치" 허용 → 설치
+            - 아이폰: 사파리로 사이트를 열고 공유 버튼 → "홈 화면에 추가"
+          files: out/*

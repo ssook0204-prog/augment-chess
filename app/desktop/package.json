@@ -1,0 +1,52 @@
+{
+  "name": "augment-chess",
+  "productName": "증강 체스",
+  "version": "1.0.0",
+  "description": "카드를 뽑아 기물에 능력을 더하는 체스 변형 게임",
+  "author": "ssook0204",
+  "homepage": "https://ssook0204-prog.github.io/augment-chess/",
+  "license": "UNLICENSED",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "io.github.ssook0204prog.augmentchess",
+    "productName": "증강 체스",
+    "executableName": "AugmentChess",
+    "files": ["main.js", "offline/**", "icon.png"],
+    "icon": "icon.png",
+    "directories": { "output": "dist" },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "artifactName": "AugmentChess-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "증강 체스",
+      "uninstallDisplayName": "증강 체스"
+    },
+    "mac": {
+      "target": [{ "target": "dir", "arch": ["universal"] }],
+      "category": "public.app-category.board-games",
+      "identity": null
+    },
+    "linux": {
+      "target": [{ "target": "AppImage", "arch": ["x64"] }, { "target": "deb", "arch": ["x64"] }],
+      "category": "Game",
+      "executableName": "augment-chess",
+      "synopsis": "증강 체스",
+      "maintainer": "ssook0204 <ssook0204-prog@users.noreply.github.com>",
+      "artifactName": "AugmentChess-linux-${arch}.${ext}"
+    }
+  }
+}

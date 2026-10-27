@@ -1,0 +1,34 @@
+plugins { id 'com.android.application' }
+
+def ks = System.getenv('AC_KEYSTORE')
+android {
+    namespace 'io.github.ssook0204prog.augmentchess'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'io.github.ssook0204prog.augmentchess'
+        minSdk 24
+        targetSdk 34
+        versionCode((System.getenv('AC_VERSION_CODE') ?: '1') as int)
+        versionName(System.getenv('AC_VERSION_NAME') ?: '1.0.0')
+    }
+    signingConfigs {
+        release {
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('AC_KEYSTORE_PASS')
+                keyAlias System.getenv('AC_KEY_ALIAS') ?: 'augmentchess'
+                keyPassword System.getenv('AC_KEY_PASS') ?: System.getenv('AC_KEYSTORE_PASS')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (ks) signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
