@@ -70,7 +70,7 @@ create policy "wallet update own" on public.wallet for update using (auth.uid() 
 -- 규칙(서버가 지켜요, 브라우저를 고쳐도 소용없어요):
 --  1) 골드는 "토큰 통"으로 늘어나요: 45초마다 +100(= 한 판 승리 값), 통은 최대 5000까지 쌓여요(오래 오프라인으로 한 사람도 괜찮게).
 --     저장 요청을 아무리 많이 보내도 통에 든 만큼만 늘어나요. 처음 저장하는 계정은 2000까지 인정해요.
---  2) 물건을 사면 종류별 값(색 테마 300 · 이모지 세트 500 · 테두리 효과 800 · 이름 효과 600)만큼 골드가 줄었거나 통에서 쓸 수 있어야 해요.
+--  2) 물건을 사면 종류별 값(색 테마 300 · 이모지 세트 500 · 테두리 효과 800 · 이름 효과 600 · 움직임 효과 700)만큼 골드가 줄었거나 통에서 쓸 수 있어야 해요.
 --     모자라면 새로 늘어난 물건은 취소되고 골드도 허용 한도까지만 인정돼요.
 --  3) 물건 이름 모양이 이상하거나 60개를 넘으면 그 항목은 지워요. 장착(eq)은 가진 물건만 인정하고, 나만의 이름 효과는 정해진 모양만 인정해요.
 --  4) 한 번에 저장하는 크기는 20KB까지예요.
@@ -116,7 +116,7 @@ begin
   -- 가진 물건: 이름 모양이 맞는 것만, 60개까지
   if jsonb_typeof(jn->'own') = 'object' then
     for k in select jsonb_object_keys(jn->'own') loop
-      if k ~ '^(ct|sk|fx|nm):[a-z0-9]{1,16}$' and n < 60 then newown := newown || jsonb_build_object(k, 1); n := n + 1; end if;
+      if k ~ '^(ct|sk|fx|nm|mv):[a-z0-9]{1,16}$' and n < 60 then newown := newown || jsonb_build_object(k, 1); n := n + 1; end if;
     end loop;
   end if;
   -- upsert(INSERT ... ON CONFLICT)도 먼저 이 트리거를 지나므로, 이미 행이 있는지 직접 찾아봐요
@@ -137,7 +137,7 @@ begin
   -- 새로 생긴 물건의 값
   for k in select jsonb_object_keys(newown) loop
     if not (oown ? k) then
-      cost := cost + case split_part(k, ':', 1) when 'ct' then 300 when 'sk' then 500 when 'fx' then 800 when 'nm' then 600 else 0 end;
+      cost := cost + case split_part(k, ':', 1) when 'ct' then 300 when 'sk' then 500 when 'fx' then 800 when 'nm' then 600 when 'mv' then 700 else 0 end;
     end if;
   end loop;
   net := ng + cost - og;
@@ -154,7 +154,7 @@ begin
       if k = 'ui' then neweq := neweq || jsonb_build_object(k, v);
       elsif jsonb_typeof(v) = 'string' and length(v #>> '{}') <= 80 then
         if k = 'nm' and (v #>> '{}') ~ nmre then neweq := neweq || jsonb_build_object(k, v);
-        elsif k in ('ct','sk','fx','nm') and newown ? (k || ':' || (v #>> '{}')) then neweq := neweq || jsonb_build_object(k, v);
+        elsif k in ('ct','sk','fx','nm','mv') and newown ? (k || ':' || (v #>> '{}')) then neweq := neweq || jsonb_build_object(k, v);
         end if;
       end if;
     end loop;
