@@ -86,3 +86,17 @@
 ## 내 이미지
 - 상점 > 내 이미지에서 기물 그림과 프로필 사진을 올릴 수 있습니다(로그인한 계정만).
 - 올리면 브라우저에서 자동검사(NSFW 모델, 격리된 iframe)를 하고, 통과하면 바로 적용·걸리면 관리자 승인을 기다립니다. `supabase.sql`의 `user_imgs` 부분을 실행해야 동작합니다.
+
+## 앱 설치
+
+[최신 설치 파일 받기](https://github.com/ssook0204-prog/augment-chess/releases/latest) — 앱은 항상 최신 게임 사이트를 열고, 인터넷이 없으면 앱에 든 오프라인 판이 열려요.
+
+| 기기 | 파일 |
+|---|---|
+| 윈도우 | [AugmentChess-Setup.exe](https://github.com/ssook0204-prog/augment-chess/releases/latest/download/AugmentChess-Setup.exe) |
+| 맥 | [AugmentChess-mac.dmg](https://github.com/ssook0204-prog/augment-chess/releases/latest/download/AugmentChess-mac.dmg) |
+| 안드로이드 | [AugmentChess-android.apk](https://github.com/ssook0204-prog/augment-chess/releases/latest/download/AugmentChess-android.apk) |
+| 리눅스 | [AppImage](https://github.com/ssook0204-prog/augment-chess/releases/latest/download/AugmentChess-linux-x86_64.AppImage) · [.deb](https://github.com/ssook0204-prog/augment-chess/releases/latest/download/AugmentChess-linux-amd64.deb) |
+| 아이폰 | 사파리로 사이트 열기 → 공유 → "홈 화면에 추가" |
+
+앱 소스는 `app/`에 있고, `app/`을 고쳐서 올리면 GitHub Actions(`.github/workflows/app.yml`)가 설치 파일을 새로 만들어 릴리스에 올려요.
