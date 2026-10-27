@@ -394,6 +394,20 @@ body.txe #txfab *:hover,body.txe [data-notx] *:hover{outline:none;cursor:auto}
 #frinv{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:100001;background:var(--paper,#fbfaf6);color:var(--ink,#1f1e1c);border:2px solid var(--ink,#1f1e1c);border-radius:12px;box-shadow:4px 4px 0 var(--ink,#1f1e1c);padding:12px 16px;display:grid;gap:8px;max-width:92vw}
 .abhint{font-size:.78rem;color:var(--mut)}.lbo{display:inline-flex;gap:6px;align-items:center;font-weight:700;margin-left:6px}
 .mct{padding-bottom:72px}
+
+.qtop{display:block;width:100%;text-align:left;margin:0 0 12px;padding:10px 12px!important;cursor:pointer;font:inherit;color:inherit}
+.qtop .qth{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}
+.qtop .qtd{font-size:.8rem;color:var(--mut);font-weight:700}
+.qtop .qtb{font-style:normal;font-size:.75rem;font-weight:800;background:#e5484d;color:#fff;border-radius:999px;padding:2px 8px;animation:qtpulse 1.6s ease-in-out infinite}
+.qtop .qtm{margin-left:auto;font-size:.8rem;font-weight:700;color:var(--mut)}
+.qtop .qtl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.qtop .qtc{display:flex;flex-direction:column;gap:3px;border:1.5px solid var(--ink);border-radius:10px;padding:6px 8px;background:var(--paper);min-width:0}
+.qtop .qtc.ok{background:#fff6d6}.qtop .qtc.cl{background:#eefbe7;opacity:.8}
+.qtop .qtn{font-size:.72rem;font-weight:700;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.qtop .qtv{font-size:.7rem;color:var(--mut);font-weight:700}
+.qtop .qbar{height:6px}
+@keyframes qtpulse{50%{transform:scale(1.07)}}
+@media (prefers-reduced-motion:reduce){.qtop .qtb{animation:none}}
 </style></head><body><main id="app"></main><div id="mod"></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <symbol id="pC" viewBox="0 0 100 100"><rect class="sh" x="10" y="86" width="80" height="9" rx="4.5"/><rect class="sh" x="24" y="64" width="20" height="24" rx="7"/><rect class="sh" x="56" y="64" width="20" height="24" rx="7"/><path class="sh" d="M24 68 Q18 38 36 34 H64 Q82 38 76 68 Z"/><rect class="sh" x="5" y="38" width="24" height="28" rx="9"/><rect class="sh" x="71" y="38" width="24" height="28" rx="9"/><path class="sh" d="M5 40 V30 H12 V36 M15 36 V30 H22 V36 M71 36 V30 H78 V36 M81 36 V30 H88 V40"/><rect class="sh" x="36" y="14" width="28" height="22" rx="10"/><path class="sh" d="M36 16 L39 5 L45 13 L50 3 L55 13 L61 5 L64 16 Z"/><path class="dt" d="M43 26 H57"/><path d="M50 44 L57 52 L50 60 L43 52 Z" style="fill:var(--pd);stroke:var(--ps);stroke-width:2.5;stroke-linejoin:round"/></symbol>
@@ -1943,7 +1957,7 @@ function menu(){if(typeof rkForfeit=='function')rkForfeit();mmStop();if(FRIV&&RO
  if(typeof nkNeed=='function'&&nkNeed()){nickGate(NK.conf?'다른 사람이 먼저 쓰고 있는 닉네임이라 다시 정해야 해요':'');return}
  if(window.__PRIV&&!(typeof REAL!='undefined'&&REAL.admin)){app.innerHTML=privLock();return}
  app.innerHTML=`<header class="mh"><div><h1>${NAME}</h1><p>v${VER} · <span class="goldchip" title="게임에서 이길 때마다 100골드">🪙 ${goldGet()}</span></p></div><div class="row">${IS_ADMIN?'<button class="ac" onclick="adminOpen()">관리자</button>':IS_SUB&&SUBP.length?'<button class="ac" onclick="adminOpen()">부관리자</button>':''}${typeof installBtn=='function'?installBtn():''}<button onclick="shop()">상점</button><button onclick="wiki()">백과사전</button><button onclick="snd()">${SND?'소리 켬':'소리 끔'}</button><button onclick="settings()">설정</button></div></header>
- ${typeof noticeHtml=='function'?noticeHtml():''}${typeof profileHtml=='function'?profileHtml():''}<div class="box opts"><div class="opt"><b>모드</b>${segO('gm',GM,[['normal','일반'],['chaos','카오스']].concat(SET().grandOn!=0||GM=='grand'?[['grand','그랜드']]:[]))}</div>
+ ${typeof qTopHtml=='function'?qTopHtml():''}${typeof noticeHtml=='function'?noticeHtml():''}${typeof profileHtml=='function'?profileHtml():''}<div class="box opts"><div class="opt"><b>모드</b>${segO('gm',GM,[['normal','일반'],['chaos','카오스']].concat(SET().grandOn!=0||GM=='grand'?[['grand','그랜드']]:[]))}</div>
  <div class="opt"><b>능력</b><button id="abt" class="sw ${AB?'on':''}" role="switch" aria-checked="${AB}" aria-label="능력" onclick="setOpt('ab',AB?'0':'1')"></button><span class="abhint">카오스·그랜드와 함께 쓸 수 있어요</span></div>
  <div class="opt"><b>내 색 (AI)</b>${segO('pc',PC,[['w','WHITE'],['b','BLACK']])}</div>
  <div class="opt"><b>AI 강화</b><button onclick="aiEnh()">${AIB.length?AIB.length+'개 켜짐':'설정'}</button></div>
@@ -1957,7 +1971,7 @@ ${tile('랭크전','점수를 걸고 대국합니다. 승패에 따라 레이팅
  ${tile('친선전','온라인 방을 만들거나 방 코드로 입장합니다.','ONLINE',pieceSvg('w','B')+pieceSvg('b','B'),'lobby()')}
  ${tile('관전 · 중계','진행 중인 대국을 실시간으로 구경하고 채팅해요.','WATCH',pieceSvg('w','N')+pieceSvg('b','N'),'watchMenu()')}
  ${tile('친구',(typeof frBadge=='function'?frBadge():'친구를 추가하고 접속 중인 친구를 대국에 초대해요.'),'FRIENDS',pieceSvg('w','N')+pieceSvg('w','B'),'frOpen()')}
- ${tile('퀘스트 · 업적','오늘의 퀘스트를 깨고 골드를 받아요. '+(qUnclaimed()?'받을 보상 '+qUnclaimed()+'개!':''),'DAILY',pieceSvg('w','P')+pieceSvg('w','K'),'qOpen(\'q\')')}
+
  ${tile('백과사전','기본 규칙과 카드·기물 목록을 확인합니다.','INFO',pieceSvg('w','P')+pieceSvg('b','P'),'wiki()')}</div>`;if(typeof offlineLock=='function')offlineLock()}
 let WT='rule',WF='ALL';
 const stEsc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -3053,6 +3067,12 @@ function qOpen(t){if(t)QT=t;const Q=qLoad(),g=goldGet();
   body=`<div class="qbody"><p class="stnote">${QACH.filter(a=>Q.a[a.id]).length} / ${QACH.length} 달성</p>${rows}</div>`}
  MOD.innerHTML=`<div class="mod" onclick="if(event.target===this){closeMod();if(S.scr=='menu')menu()}"><div class="box stbox shbox" role="dialog" aria-label="퀘스트·업적" data-notx><div class="sthd"><h2>퀘스트 · 업적</h2><span class="goldchip">🪙 ${g}</span><button class="stic" aria-label="닫기" onclick="closeMod();if(S.scr=='menu')menu()">✕</button></div>
  <div class="shtabs"><button class="${QT=='q'?'on':''}" onclick="qOpen('q')">오늘의 퀘스트${QT!='q'&&Q.q.some(id=>qDone(Q,id)&&!Q.c[id])?' ●':''}</button><button class="${QT=='a'?'on':''}" onclick="qOpen('a')">업적${QT!='a'&&QACH.some(a=>Q.a[a.id]===1)?' ●':''}</button></div>${body}</div></div>`}
+
+/* 메뉴 맨 위: 오늘의 퀘스트 한눈에 보기 (누르면 퀘스트·업적 창) */
+function qTopHtml(){try{const Q=qLoad(),un=qUnclaimed(),done=Q.q.filter(id=>Q.c[id]).length;
+ const chip=id=>{const d=QDEF(id),v=Math.min(d.m,Q.p[d.t]||0),ok=v>=d.m,cl=!!Q.c[id];
+  return `<span class="qtc${cl?' cl':ok?' ok':''}"><span class="qtn">${cl?'✔ ':ok?'🎁 ':''}${esc(d.n)}</span><span class="qtv">${v}/${d.m}</span><span class="qbar"><i style="width:${Math.round(100*v/d.m)}%"></i></span></span>`};
+ return `<button class="box qtop" id="qtop" onclick="qOpen('q')" aria-label="오늘의 퀘스트 열기"><span class="qth"><b>📜 오늘의 퀘스트</b><span class="qtd">${done}/3 완료${Q.all?' · 보너스 받음':''}</span>${un?`<em class="qtb">받을 보상 ${un}개</em>`:''}<span class="qtm">퀘스트 · 업적 ›</span></span><span class="qtl">${Q.q.map(chip).join('')}</span></button>`}catch(e){return ''}}
 
 /* ================= 친구 시스템 ================= */
 const FR={list:[],names:{},loaded:0,busy:0,msg:'',seen:{}};
