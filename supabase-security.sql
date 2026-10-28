@@ -35,7 +35,7 @@ create or replace function public.ranks_guard() returns trigger
 declare g0 int; g1 int; dr int; lim int; today date := (now() at time zone 'Asia/Seoul')::date; bs int;
 begin
   -- 이름표: 위험한 글자 빼고 24글자까지
-  new.n := left(regexp_replace(coalesce(new.n, ''), '[<>&"''`\\[:cntrl:]​-‏ -‮⁠-⁤﻿]', '', 'g'), 24);
+  new.n := left(regexp_replace(coalesce(new.n, ''), '[<>&"''`\\[:cntrl:]\u200b-\u200f\u2028-\u202e\u2060-\u2064\ufeff]', '', 'g'), 24);
   new.w := greatest(coalesce(new.w, 0), 0); new.l := greatest(coalesce(new.l, 0), 0); new.d := greatest(coalesce(new.d, 0), 0);
   new.updated_at := now();
   -- SQL Editor(서버)·관리자·'랭크 차단' 권한 부관리자는 그대로 허용
@@ -94,12 +94,12 @@ create policy "ranks admin insert" on public.ranks for insert
 alter table public.profiles drop constraint if exists profiles_nick_safe;
 alter table public.profiles add constraint profiles_nick_safe check (
   nick !~ '[<>&"''`\\]'
-  and nick !~ '[[:cntrl:]​-‏ -‮⁠-⁤﻿]'
+  and nick !~ '[[:cntrl:]\u200b-\u200f\u2028-\u202e\u2060-\u2064\ufeff]'
   and nick = btrim(nick)
 ) not valid;
 alter table public.profiles drop constraint if exists profiles_nick_reserved;
 alter table public.profiles add constraint profiles_nick_reserved check (
-  regexp_replace(lower(normalize(nick, NFKC)), '[[:space:]​-‏⁠﻿._·•|~*+-]', '', 'g')
+  regexp_replace(lower(normalize(nick, NFKC)), '[[:space:]\u200b-\u200f\u2060\ufeff._·•|~*+-]', '', 'g')
     !~ '(관리자|운영자|운영진|어드민|admin|moderator)'
 ) not valid;
 
