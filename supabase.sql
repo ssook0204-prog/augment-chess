@@ -379,7 +379,7 @@ create or replace function public.ranks_guard() returns trigger
   language plpgsql security definer set search_path = public as $$
 begin
   -- 이름표: 위험한 글자 빼고 24글자까지
-  new.n := left(regexp_replace(coalesce(new.n, ''), '[<>&"''`\\[:cntrl:]​-‏ -‮⁠-⁤﻿]', '', 'g'), 24);
+  new.n := left(regexp_replace(coalesce(new.n, ''), '[<>&"''`\\[:cntrl:]\u200b-\u200f\u2028-\u202e\u2060-\u2064\ufeff]', '', 'g'), 24);
   new.updated_at := now();
   -- SQL Editor·서버 계산(rank_report)·관리자·'랭크 차단' 권한 부관리자는 그대로 허용
   if auth.uid() is null or current_setting('ac.rank_srv', true) = '1' or public.has_perm('ban') then return new; end if;
