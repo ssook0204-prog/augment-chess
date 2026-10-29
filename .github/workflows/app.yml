@@ -102,15 +102,20 @@ jobs:
     needs: [desktop, android]
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v4
+      - name: 게임 버전 읽기
+        run: echo "GV=$(grep -o "VER='[0-9.]*'" index.html | head -1 | cut -d"'" -f2)" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@v4
         with: { path: out, merge-multiple: true }
       - run: ls -la out
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: app-v1.0.${{ github.run_number }}
-          name: 증강 체스 앱 v1.0.${{ github.run_number }}
+          name: 증강 체스 v${{ env.GV }} (앱 1.0.${{ github.run_number }})
           make_latest: 'true'
           body: |
+            **게임 버전 v${{ env.GV }}** (앱 안 오프라인 판도 이 버전이에요)
+
             증강 체스 설치 파일이에요. 앱은 항상 최신 게임 사이트를 열어서, 게임이 업데이트돼도 앱을 다시 받을 필요가 없어요. 인터넷이 없으면 앱에 든 오프라인 판(AI·2인 플레이)이 열려요.
 
             - 윈도우: AugmentChess-Setup.exe → 실행 → (파란 경고가 뜨면) "추가 정보" → "실행"
